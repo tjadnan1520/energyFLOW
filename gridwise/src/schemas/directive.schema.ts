@@ -20,7 +20,11 @@ const directiveHoursSchema = z
       });
     }
 
-    for (let index = 1; index < hours.length; index += 1) {
+    for (
+      let index = 1;
+      index < hours.length;
+      index += 1
+    ) {
       if (hours[index] <= hours[index - 1]) {
         ctx.addIssue({
           code: "custom",
@@ -79,21 +83,12 @@ const maxGridWindowAdjustmentSchema = z
   })
   .strict();
 
-const explanationSchema = z
-  .string()
-  .min(1)
-  .refine((value) => value.trim().length > 0, {
-    message: "explanation must not be empty",
-  });
-
-const noteIndexSchema = z
-  .number()
-  .int()
-  .nonnegative();
-
 const noOpInterpretationSchema = z
   .object({
-    note_index: noteIndexSchema,
+    note_index: z
+      .number()
+      .int()
+      .nonnegative(),
 
     applies: z.literal(false),
 
@@ -101,13 +96,25 @@ const noOpInterpretationSchema = z
 
     structured_adjustment: z.null(),
 
-    explanation: explanationSchema,
+    explanation: z
+      .string()
+      .min(1)
+      .refine(
+        (value) => value.trim().length > 0,
+        {
+          message:
+            "explanation must not be empty",
+        }
+      ),
   })
   .strict();
 
 const solarReductionInterpretationSchema = z
   .object({
-    note_index: noteIndexSchema,
+    note_index: z
+      .number()
+      .int()
+      .nonnegative(),
 
     applies: z.literal(true),
 
@@ -118,31 +125,54 @@ const solarReductionInterpretationSchema = z
     structured_adjustment:
       solarReductionAdjustmentSchema,
 
-    explanation: explanationSchema,
+    explanation: z
+      .string()
+      .min(1)
+      .refine(
+        (value) => value.trim().length > 0,
+        {
+          message:
+            "explanation must not be empty",
+        }
+      ),
   })
   .strict();
 
-const minimumBatteryReserveInterpretationSchema =
-  z
-    .object({
-      note_index: noteIndexSchema,
+const minimumBatteryReserveInterpretationSchema = z
+  .object({
+    note_index: z
+      .number()
+      .int()
+      .nonnegative(),
 
-      applies: z.literal(true),
+    applies: z.literal(true),
 
-      directive_type: z.literal(
-        "minimum_battery_reserve"
+    directive_type: z.literal(
+      "minimum_battery_reserve"
+    ),
+
+    structured_adjustment:
+      minimumBatteryReserveAdjustmentSchema,
+
+    explanation: z
+      .string()
+      .min(1)
+      .refine(
+        (value) => value.trim().length > 0,
+        {
+          message:
+            "explanation must not be empty",
+        }
       ),
-
-      structured_adjustment:
-        minimumBatteryReserveAdjustmentSchema,
-
-      explanation: explanationSchema,
-    })
-    .strict();
+  })
+  .strict();
 
 const noChargeWindowInterpretationSchema = z
   .object({
-    note_index: noteIndexSchema,
+    note_index: z
+      .number()
+      .int()
+      .nonnegative(),
 
     applies: z.literal(true),
 
@@ -153,13 +183,25 @@ const noChargeWindowInterpretationSchema = z
     structured_adjustment:
       noChargeWindowAdjustmentSchema,
 
-    explanation: explanationSchema,
+    explanation: z
+      .string()
+      .min(1)
+      .refine(
+        (value) => value.trim().length > 0,
+        {
+          message:
+            "explanation must not be empty",
+        }
+      ),
   })
   .strict();
 
 const noDischargeWindowInterpretationSchema = z
   .object({
-    note_index: noteIndexSchema,
+    note_index: z
+      .number()
+      .int()
+      .nonnegative(),
 
     applies: z.literal(true),
 
@@ -170,13 +212,25 @@ const noDischargeWindowInterpretationSchema = z
     structured_adjustment:
       noDischargeWindowAdjustmentSchema,
 
-    explanation: explanationSchema,
+    explanation: z
+      .string()
+      .min(1)
+      .refine(
+        (value) => value.trim().length > 0,
+        {
+          message:
+            "explanation must not be empty",
+        }
+      ),
   })
   .strict();
 
 const maxGridWindowInterpretationSchema = z
   .object({
-    note_index: noteIndexSchema,
+    note_index: z
+      .number()
+      .int()
+      .nonnegative(),
 
     applies: z.literal(true),
 
@@ -187,7 +241,16 @@ const maxGridWindowInterpretationSchema = z
     structured_adjustment:
       maxGridWindowAdjustmentSchema,
 
-    explanation: explanationSchema,
+    explanation: z
+      .string()
+      .min(1)
+      .refine(
+        (value) => value.trim().length > 0,
+        {
+          message:
+            "explanation must not be empty",
+        }
+      ),
   })
   .strict();
 
@@ -215,9 +278,8 @@ export const directiveInterpretationsSchema = z
       (directive) => directive.note_index
     );
 
-    const uniqueIndexes = new Set(
-      noteIndexes
-    );
+    const uniqueIndexes =
+      new Set(noteIndexes);
 
     if (
       uniqueIndexes.size !==

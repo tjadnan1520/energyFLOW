@@ -4,6 +4,10 @@ import helmet from "helmet";
 import healthRouter from "./routes/health.routes";
 import optimizeRouter from "./routes/optimize.routes";
 
+import {
+  toPublicError,
+} from "./utils/error.utils";
+
 const app = express();
 
 app.disable("x-powered-by");
@@ -33,11 +37,13 @@ app.use(healthRouter);
 
 app.use(optimizeRouter);
 
-app.use((_req, res) => {
-  res.status(404).json({
-    error: "Route not found",
-  });
-});
+app.use(
+  (_req, res) => {
+    res.status(404).json({
+      error: "Route not found",
+    });
+  }
+);
 
 app.use(
   (
@@ -48,17 +54,12 @@ app.use(
   ) => {
     console.error(error);
 
-    if (error instanceof SyntaxError) {
-      res.status(400).json({
-        error: "Malformed JSON request",
-      });
+    const result =
+      toPublicError(error);
 
-      return;
-    }
-
-    res.status(500).json({
-      error: "Internal server error",
-    });
+    res
+      .status(result.statusCode)
+      .json(result.body);
   }
 );
 
