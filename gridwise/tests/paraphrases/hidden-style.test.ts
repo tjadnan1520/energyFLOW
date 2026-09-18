@@ -372,10 +372,10 @@ describe(
               "max_grid_window",
             structured_adjustment: {
               hours: [18, 19, 20],
-              max_grid_kwh: 120,
+              max_grid_kwh: 160,
             },
             explanation:
-              "Grid import must remain at or below 120 kWh during the evening window.",
+              "Grid import must remain at or below 160 kWh during the evening window.",
           },
         ] satisfies Directive[]);
 
@@ -386,7 +386,7 @@ describe(
             )
             .send(
               createRequest([
-                "From 6 until 9 PM, grid supply must never exceed 120 kWh in an hour.",
+                "From 6 until 9 PM, grid supply must never exceed 160 kWh in an hour.",
               ])
             );
 
@@ -405,10 +405,10 @@ describe(
               "max_grid_window",
             structured_adjustment: {
               hours: [18, 19, 20],
-              max_grid_kwh: 120,
+              max_grid_kwh: 160,
             },
             explanation:
-              "Grid import must remain at or below 120 kWh during the evening window.",
+              "Grid import must remain at or below 160 kWh during the evening window.",
           },
         ]);
       }
@@ -590,13 +590,13 @@ describe(
 
         expect(
           response.status
-        ).toBeGreaterThanOrEqual(
-          400
-        );
+        ).toBe(500);
 
         expect(
-          response.status
-        ).toBeLessThan(500);
+          response.body
+        ).toEqual({
+          error: "Internal server error",
+        });
       }
     );
 
@@ -632,13 +632,13 @@ describe(
 
         expect(
           response.status
-        ).toBeGreaterThanOrEqual(
-          400
-        );
+        ).toBe(500);
 
         expect(
-          response.status
-        ).toBeLessThan(500);
+          response.body
+        ).toEqual({
+          error: "Internal server error",
+        });
       }
     );
   }

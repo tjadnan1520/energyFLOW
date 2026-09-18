@@ -76,7 +76,7 @@ function createNeutralDirectives(): CompiledDirectives {
 
         discharge_allowed: true,
 
-        max_grid_kwh: Infinity,
+        max_grid_kwh: null,
       })
     ),
   };

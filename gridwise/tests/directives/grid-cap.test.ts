@@ -123,12 +123,12 @@ describe(
         expect(
           result.by_hour[17]
             .max_grid_kwh
-        ).toBe(Infinity);
+        ).toBe(null);
 
         expect(
           result.by_hour[21]
             .max_grid_kwh
-        ).toBe(Infinity);
+        ).toBe(null);
       }
     );
 

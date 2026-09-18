@@ -67,20 +67,16 @@ function createRequest(): OptimizeEnergyRequest {
 
 function createDirectives(): CompiledDirectives {
   return {
-    effectiveSolarFactorByHour:
-      Array(24).fill(1),
-
-    minimumBatteryEnergyByHour:
-      Array(24).fill(20),
-
-    noChargeByHour:
-      Array(24).fill(false),
-
-    noDischargeByHour:
-      Array(24).fill(false),
-
-    maxGridByHour:
-      Array(24).fill(Infinity),
+    by_hour: Array.from(
+      { length: 24 },
+      () => ({
+        solar_factor: 1,
+        minimum_battery_energy_kwh: 20,
+        charge_allowed: true,
+        discharge_allowed: true,
+        max_grid_kwh: null,
+      })
+    ),
   };
 }
 
@@ -426,7 +422,7 @@ describe(
           createDirectives();
 
         directives
-          .effectiveSolarFactorByHour[10] =
+          .by_hour[10].solar_factor =
           0.2;
 
         const result =
@@ -456,7 +452,7 @@ describe(
           createDirectives();
 
         directives
-          .effectiveSolarFactorByHour[10] =
+          .by_hour[10].solar_factor =
           0.2;
 
         const result =
@@ -467,6 +463,34 @@ describe(
 
         result.hourly[10]
           .grid_kwh = 90;
+
+        result.total_grid_kwh =
+          result.hourly.reduce(
+            (total, entry) =>
+              total +
+              entry.grid_kwh,
+            0
+          );
+
+        result.total_cost_bdt =
+          result.hourly.reduce(
+            (total, entry) =>
+              total +
+              entry.grid_kwh *
+                request.hours[
+                  entry.hour
+                ]
+                  .tariff_bdt_per_kwh,
+            0
+          );
+
+        result.peak_grid_kwh =
+          Math.max(
+            ...result.hourly.map(
+              (entry) =>
+                entry.grid_kwh
+            )
+          );
 
         expect(() =>
           validateOptimizationResult(
@@ -592,8 +616,8 @@ describe(
           createDirectives();
 
         directives
-          .noChargeByHour[10] =
-          true;
+          .by_hour[10].charge_allowed =
+          false;
 
         const result =
           createValidResult();
@@ -628,8 +652,8 @@ describe(
           createDirectives();
 
         directives
-          .noChargeByHour[10] =
-          true;
+          .by_hour[10].charge_allowed =
+          false;
 
         const result =
           createValidResult();
@@ -654,8 +678,8 @@ describe(
           createDirectives();
 
         directives
-          .noDischargeByHour[10] =
-          true;
+          .by_hour[10].discharge_allowed =
+          false;
 
         const result =
           createValidResult();
@@ -690,8 +714,8 @@ describe(
           createDirectives();
 
         directives
-          .noDischargeByHour[10] =
-          true;
+          .by_hour[10].discharge_allowed =
+          false;
 
         const result =
           createValidResult();
@@ -716,14 +740,14 @@ describe(
           createDirectives();
 
         directives
-          .maxGridByHour[18] =
-          100;
+          .by_hour[0].max_grid_kwh =
+          99;
 
         const result =
           createValidResult();
 
-        result.hourly[18]
-          .grid_kwh = 101;
+        result.hourly[0]
+          .grid_kwh = 100;
 
         expectValidationError(
           () =>
@@ -746,13 +770,13 @@ describe(
           createDirectives();
 
         directives
-          .maxGridByHour[18] =
+          .by_hour[0].max_grid_kwh =
           100;
 
         const result =
           createValidResult();
 
-        result.hourly[18]
+        result.hourly[0]
           .grid_kwh = 100;
 
         expect(() =>

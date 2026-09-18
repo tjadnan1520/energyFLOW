@@ -98,7 +98,7 @@ describe(
 
           expect(
             hour.max_grid_kwh
-          ).toBe(Infinity);
+          ).toBe(null);
         }
       }
     );
@@ -149,7 +149,7 @@ describe(
             minimum_battery_energy_kwh: 20,
             charge_allowed: true,
             discharge_allowed: true,
-            max_grid_kwh: Infinity,
+            max_grid_kwh: null,
           });
         }
       }
@@ -221,7 +221,7 @@ describe(
         expect(
           result.by_hour[10]
             .max_grid_kwh
-        ).toBe(Infinity);
+        ).toBe(null);
       }
     );
   }
