@@ -152,11 +152,14 @@ function validateEnergyBalance(
       directives.by_hour[hour]
         .solar_factor;
 
-    assertClose(
-      plan.solar_used_kwh,
-      expectedSolar,
-      `solar_used_kwh at hour ${hour}`
-    );
+    if (
+      plan.solar_used_kwh >
+      expectedSolar + EPSILON
+    ) {
+      throw new PlanValidationError(
+        `solar_used_kwh exceeds effective solar at hour ${hour}. Available ${expectedSolar}, received ${plan.solar_used_kwh}`
+      );
+    }
 
     const supply =
       plan.grid_kwh +

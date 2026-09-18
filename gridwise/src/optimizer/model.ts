@@ -14,6 +14,7 @@ export type EnergyVariableNames = {
   discharge: string;
   battery: string;
   chargeMode: string;
+  solar: string;
 };
 
 export type EnergyModel = {
@@ -80,6 +81,7 @@ function createVariableNames(): EnergyVariableNames[] {
       discharge: `discharge_${hour}`,
       battery: `battery_${hour}`,
       chargeMode: `charge_mode_${hour}`,
+      solar: `solar_${hour}`,
     })
   );
 }
@@ -113,20 +115,12 @@ function buildConstraints(
     const input =
       request.hours[hour];
 
-    const constraint =
-      directives.by_hour[hour];
-
     const variable =
       variables[hour];
 
-    const effectiveSolar =
-      input.solar_kwh *
-      constraint.solar_factor;
-
     constraints.push(
-      ` balance_${hour}: ${variable.grid} + ${variable.discharge} - ${variable.charge} = ${formatNumber(
-        input.demand_kwh -
-          effectiveSolar
+      ` balance_${hour}: ${variable.grid} + ${variable.discharge} - ${variable.charge} + ${variable.solar} = ${formatNumber(
+        input.demand_kwh
       )}`
     );
   }
@@ -236,6 +230,13 @@ function buildBounds(
 
     bounds.push(
       ` 0 <= ${variable.grid} <= ${INF}`
+    );
+
+    bounds.push(
+      ` 0 <= ${variable.solar} <= ${formatNumber(
+        request.hours[hour].solar_kwh *
+          constraint.solar_factor
+      )}`
     );
 
     bounds.push(

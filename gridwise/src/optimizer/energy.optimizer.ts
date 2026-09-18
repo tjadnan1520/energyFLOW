@@ -136,10 +136,10 @@ function extractOptimizationResult(
       );
 
     const solarUsed =
-      request.hours[hour]
-        .solar_kwh *
-      directives.by_hour[hour]
-        .solar_factor;
+      readPrimal(
+        result,
+        variable.solar
+      );
 
     const cleanedGrid =
       cleanSmallNumber(grid);

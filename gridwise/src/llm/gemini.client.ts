@@ -4,417 +4,452 @@ import {
   GRIDWISE_SYSTEM_PROMPT,
 } from "./prompts";
 
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey =
+  process.env.GEMINI_API_KEY;
 
-if (!apiKey) {
+if (
+  !apiKey ||
+  apiKey.trim().length === 0
+) {
   throw new Error(
     "GEMINI_API_KEY environment variable is not configured"
   );
 }
 
-const gemini = new GoogleGenAI({
-  apiKey,
-});
+const gemini =
+  new GoogleGenAI({
+    apiKey,
+  });
 
-const directiveInterpretationJsonSchema = {
-  type: "object",
+const directiveInterpretationJsonSchema =
+  {
+    type: "object",
 
-  properties: {
-    directive_interpretation: {
-      type: "array",
+    properties: {
+      directive_interpretation: {
+        type: "array",
 
-      minItems: 1,
-      maxItems: 3,
+        minItems: 1,
+        maxItems: 3,
 
-      items: {
-        anyOf: [
-          {
-            type: "object",
+        items: {
+          anyOf: [
+            {
+              type: "object",
 
-            properties: {
-              note_index: {
-                type: "integer",
-                minimum: 0,
-                maximum: 2,
-              },
+              properties: {
+                note_index: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 2,
+                },
 
-              applies: {
-                type: "boolean",
-              },
+                applies: {
+                  type: "boolean",
+                  enum: [true],
+                },
 
-              directive_type: {
-                type: "string",
-                enum: ["solar_reduction"],
-              },
+                directive_type: {
+                  type: "string",
+                  enum: [
+                    "solar_reduction",
+                  ],
+                },
 
-              structured_adjustment: {
-                type: "object",
+                structured_adjustment: {
+                  type: "object",
 
-                properties: {
-                  hours: {
-                    type: "array",
-                    items: {
-                      type: "integer",
+                  properties: {
+                    hours: {
+                      type: "array",
+                      minItems: 1,
+                      maxItems: 24,
+                      items: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 23,
+                      },
+                    },
+
+                    factor: {
+                      type: "number",
                       minimum: 0,
-                      maximum: 23,
+                      maximum: 1,
                     },
                   },
 
-                  factor: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 1,
-                  },
+                  required: [
+                    "hours",
+                    "factor",
+                  ],
+
+                  additionalProperties: false,
                 },
 
-                required: [
-                  "hours",
-                  "factor",
-                ],
-
-                additionalProperties: false,
+                explanation: {
+                  type: "string",
+                },
               },
 
-              explanation: {
-                type: "string",
-              },
+              required: [
+                "note_index",
+                "applies",
+                "directive_type",
+                "structured_adjustment",
+                "explanation",
+              ],
+
+              additionalProperties: false,
             },
 
-            required: [
-              "note_index",
-              "applies",
-              "directive_type",
-              "structured_adjustment",
-              "explanation",
-            ],
+            {
+              type: "object",
 
-            additionalProperties: false,
-          },
+              properties: {
+                note_index: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 2,
+                },
 
-          {
-            type: "object",
+                applies: {
+                  type: "boolean",
+                  enum: [true],
+                },
 
-            properties: {
-              note_index: {
-                type: "integer",
-                minimum: 0,
-                maximum: 2,
-              },
+                directive_type: {
+                  type: "string",
+                  enum: [
+                    "minimum_battery_reserve",
+                  ],
+                },
 
-              applies: {
-                type: "boolean",
-              },
+                structured_adjustment: {
+                  type: "object",
 
-              directive_type: {
-                type: "string",
-                enum: [
-                  "minimum_battery_reserve",
-                ],
-              },
+                  properties: {
+                    hours: {
+                      type: "array",
+                      minItems: 1,
+                      maxItems: 24,
+                      items: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 23,
+                      },
+                    },
 
-              structured_adjustment: {
-                type: "object",
-
-                properties: {
-                  hours: {
-                    type: "array",
-                    items: {
-                      type: "integer",
+                    minimum_energy_kwh: {
+                      type: "number",
                       minimum: 0,
-                      maximum: 23,
                     },
                   },
 
-                  minimum_energy_kwh: {
-                    type: "number",
-                    minimum: 0,
-                  },
+                  required: [
+                    "hours",
+                    "minimum_energy_kwh",
+                  ],
+
+                  additionalProperties: false,
                 },
 
-                required: [
-                  "hours",
-                  "minimum_energy_kwh",
-                ],
-
-                additionalProperties: false,
+                explanation: {
+                  type: "string",
+                },
               },
 
-              explanation: {
-                type: "string",
-              },
+              required: [
+                "note_index",
+                "applies",
+                "directive_type",
+                "structured_adjustment",
+                "explanation",
+              ],
+
+              additionalProperties: false,
             },
 
-            required: [
-              "note_index",
-              "applies",
-              "directive_type",
-              "structured_adjustment",
-              "explanation",
-            ],
+            {
+              type: "object",
 
-            additionalProperties: false,
-          },
-
-          {
-            type: "object",
-
-            properties: {
-              note_index: {
-                type: "integer",
-                minimum: 0,
-                maximum: 2,
-              },
-
-              applies: {
-                type: "boolean",
-              },
-
-              directive_type: {
-                type: "string",
-                enum: [
-                  "no_charge_window",
-                ],
-              },
-
-              structured_adjustment: {
-                type: "object",
-
-                properties: {
-                  hours: {
-                    type: "array",
-                    items: {
-                      type: "integer",
-                      minimum: 0,
-                      maximum: 23,
-                    },
-                  },
+              properties: {
+                note_index: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 2,
                 },
 
-                required: ["hours"],
-
-                additionalProperties: false,
-              },
-
-              explanation: {
-                type: "string",
-              },
-            },
-
-            required: [
-              "note_index",
-              "applies",
-              "directive_type",
-              "structured_adjustment",
-              "explanation",
-            ],
-
-            additionalProperties: false,
-          },
-
-          {
-            type: "object",
-
-            properties: {
-              note_index: {
-                type: "integer",
-                minimum: 0,
-                maximum: 2,
-              },
-
-              applies: {
-                type: "boolean",
-              },
-
-              directive_type: {
-                type: "string",
-                enum: [
-                  "no_discharge_window",
-                ],
-              },
-
-              structured_adjustment: {
-                type: "object",
-
-                properties: {
-                  hours: {
-                    type: "array",
-                    items: {
-                      type: "integer",
-                      minimum: 0,
-                      maximum: 23,
-                    },
-                  },
+                applies: {
+                  type: "boolean",
+                  enum: [true],
                 },
 
-                required: ["hours"],
+                directive_type: {
+                  type: "string",
+                  enum: [
+                    "no_charge_window",
+                  ],
+                },
 
-                additionalProperties: false,
-              },
+                structured_adjustment: {
+                  type: "object",
 
-              explanation: {
-                type: "string",
-              },
-            },
-
-            required: [
-              "note_index",
-              "applies",
-              "directive_type",
-              "structured_adjustment",
-              "explanation",
-            ],
-
-            additionalProperties: false,
-          },
-
-          {
-            type: "object",
-
-            properties: {
-              note_index: {
-                type: "integer",
-                minimum: 0,
-                maximum: 2,
-              },
-
-              applies: {
-                type: "boolean",
-              },
-
-              directive_type: {
-                type: "string",
-                enum: ["max_grid_window"],
-              },
-
-              structured_adjustment: {
-                type: "object",
-
-                properties: {
-                  hours: {
-                    type: "array",
-                    items: {
-                      type: "integer",
-                      minimum: 0,
-                      maximum: 23,
+                  properties: {
+                    hours: {
+                      type: "array",
+                      minItems: 1,
+                      maxItems: 24,
+                      items: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 23,
+                      },
                     },
                   },
 
-                  max_grid_kwh: {
-                    type: "number",
-                    minimum: 0,
-                  },
+                  required: [
+                    "hours",
+                  ],
+
+                  additionalProperties: false,
                 },
 
-                required: [
-                  "hours",
-                  "max_grid_kwh",
-                ],
-
-                additionalProperties: false,
+                explanation: {
+                  type: "string",
+                },
               },
 
-              explanation: {
-                type: "string",
-              },
+              required: [
+                "note_index",
+                "applies",
+                "directive_type",
+                "structured_adjustment",
+                "explanation",
+              ],
+
+              additionalProperties: false,
             },
 
-            required: [
-              "note_index",
-              "applies",
-              "directive_type",
-              "structured_adjustment",
-              "explanation",
-            ],
+            {
+              type: "object",
 
-            additionalProperties: false,
-          },
+              properties: {
+                note_index: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 2,
+                },
 
-          {
-            type: "object",
+                applies: {
+                  type: "boolean",
+                  enum: [true],
+                },
 
-            properties: {
-              note_index: {
-                type: "integer",
-                minimum: 0,
-                maximum: 2,
+                directive_type: {
+                  type: "string",
+                  enum: [
+                    "no_discharge_window",
+                  ],
+                },
+
+                structured_adjustment: {
+                  type: "object",
+
+                  properties: {
+                    hours: {
+                      type: "array",
+                      minItems: 1,
+                      maxItems: 24,
+                      items: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 23,
+                      },
+                    },
+                  },
+
+                  required: [
+                    "hours",
+                  ],
+
+                  additionalProperties: false,
+                },
+
+                explanation: {
+                  type: "string",
+                },
               },
 
-              applies: {
-                type: "boolean",
-              },
+              required: [
+                "note_index",
+                "applies",
+                "directive_type",
+                "structured_adjustment",
+                "explanation",
+              ],
 
-              directive_type: {
-                type: "string",
-                enum: ["no_op"],
-              },
-
-              structured_adjustment: {
-                type: "null",
-              },
-
-              explanation: {
-                type: "string",
-              },
+              additionalProperties: false,
             },
 
-            required: [
-              "note_index",
-              "applies",
-              "directive_type",
-              "structured_adjustment",
-              "explanation",
-            ],
+            {
+              type: "object",
 
-            additionalProperties: false,
-          },
-        ],
+              properties: {
+                note_index: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 2,
+                },
+
+                applies: {
+                  type: "boolean",
+                  enum: [true],
+                },
+
+                directive_type: {
+                  type: "string",
+                  enum: [
+                    "max_grid_window",
+                  ],
+                },
+
+                structured_adjustment: {
+                  type: "object",
+
+                  properties: {
+                    hours: {
+                      type: "array",
+                      minItems: 1,
+                      maxItems: 24,
+                      items: {
+                        type: "integer",
+                        minimum: 0,
+                        maximum: 23,
+                      },
+                    },
+
+                    max_grid_kwh: {
+                      type: "number",
+                      minimum: 0,
+                    },
+                  },
+
+                  required: [
+                    "hours",
+                    "max_grid_kwh",
+                  ],
+
+                  additionalProperties: false,
+                },
+
+                explanation: {
+                  type: "string",
+                },
+              },
+
+              required: [
+                "note_index",
+                "applies",
+                "directive_type",
+                "structured_adjustment",
+                "explanation",
+              ],
+
+              additionalProperties: false,
+            },
+
+            {
+              type: "object",
+
+              properties: {
+                note_index: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 2,
+                },
+
+                applies: {
+                  type: "boolean",
+                  enum: [false],
+                },
+
+                directive_type: {
+                  type: "string",
+                  enum: [
+                    "no_op",
+                  ],
+                },
+
+                structured_adjustment: {
+                  type: "null",
+                },
+
+                explanation: {
+                  type: "string",
+                },
+              },
+
+              required: [
+                "note_index",
+                "applies",
+                "directive_type",
+                "structured_adjustment",
+                "explanation",
+              ],
+
+              additionalProperties: false,
+            },
+          ],
+        },
       },
     },
-  },
 
-  required: [
-    "directive_interpretation",
-  ],
+    required: [
+      "directive_interpretation",
+    ],
 
-  additionalProperties: false,
-};
+    additionalProperties: false,
+  };
 
 export async function generateDirectiveInterpretation(
   prompt: string
 ): Promise<string> {
   const model =
-    process.env.GEMINI_MODEL ||
-    "gemini-2.5-flash";
+    process.env.GEMINI_MODEL?.trim() ||
+    "gemini-3.6-flash";
 
   const response =
     await gemini.interactions.create({
       model,
-      input: [
-        {
-          type: "text",
-          text: `${GRIDWISE_SYSTEM_PROMPT}
 
-${prompt}`,
-        },
-      ],
+      system_instruction:
+        GRIDWISE_SYSTEM_PROMPT,
 
-      response_format: [
-        {
-          type: "text",
-          mime_type: "application/json",
-          schema:
-            directiveInterpretationJsonSchema,
-        },
-      ],
+      input: prompt,
+
+      response_format: {
+        type: "text",
+        mime_type: "application/json",
+        schema:
+          directiveInterpretationJsonSchema,
+      },
+
+      generation_config: {
+        seed: 1,
+      },
     });
 
-  const output = response.output_text;
+  const output =
+    response.output_text;
 
-  if (!output || output.trim().length === 0) {
+  if (
+    !output ||
+    output.trim().length === 0
+  ) {
     throw new Error(
       "Gemini returned an empty structured response"
     );
   }
 
-  return output;
+  return output.trim();
 }
