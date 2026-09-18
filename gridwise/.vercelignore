@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+dist/
+coverage/
+*.log
+tests/
+documents/
+JUDGE_REPORT.md
