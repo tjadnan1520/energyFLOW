@@ -8,6 +8,8 @@ const directiveHourSchema = z
 
 const directiveHoursSchema = z
   .array(directiveHourSchema)
+  .min(1)
+  .max(24)
   .superRefine((hours, ctx) => {
     const uniqueHours = new Set(hours);
 
@@ -34,6 +36,7 @@ const directiveHoursSchema = z
 const solarReductionAdjustmentSchema = z
   .object({
     hours: directiveHoursSchema,
+
     factor: z
       .number()
       .finite()
@@ -45,6 +48,7 @@ const solarReductionAdjustmentSchema = z
 const minimumBatteryReserveAdjustmentSchema = z
   .object({
     hours: directiveHoursSchema,
+
     minimum_energy_kwh: z
       .number()
       .finite()
@@ -67,6 +71,7 @@ const noDischargeWindowAdjustmentSchema = z
 const maxGridWindowAdjustmentSchema = z
   .object({
     hours: directiveHoursSchema,
+
     max_grid_kwh: z
       .number()
       .finite()
@@ -74,12 +79,21 @@ const maxGridWindowAdjustmentSchema = z
   })
   .strict();
 
+const explanationSchema = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim().length > 0, {
+    message: "explanation must not be empty",
+  });
+
+const noteIndexSchema = z
+  .number()
+  .int()
+  .nonnegative();
+
 const noOpInterpretationSchema = z
   .object({
-    note_index: z
-      .number()
-      .int()
-      .nonnegative(),
+    note_index: noteIndexSchema,
 
     applies: z.literal(false),
 
@@ -87,92 +101,65 @@ const noOpInterpretationSchema = z
 
     structured_adjustment: z.null(),
 
-    explanation: z
-      .string()
-      .min(1)
-      .refine((value) => value.trim().length > 0, {
-        message: "explanation must not be empty",
-      }),
+    explanation: explanationSchema,
   })
   .strict();
 
 const solarReductionInterpretationSchema = z
   .object({
-    note_index: z
-      .number()
-      .int()
-      .nonnegative(),
-
-    applies: z.literal(true),
-
-    directive_type: z.literal("solar_reduction"),
-
-    structured_adjustment:
-      solarReductionAdjustmentSchema,
-
-    explanation: z
-      .string()
-      .min(1)
-      .refine((value) => value.trim().length > 0, {
-        message: "explanation must not be empty",
-      }),
-  })
-  .strict();
-
-const minimumBatteryReserveInterpretationSchema = z
-  .object({
-    note_index: z
-      .number()
-      .int()
-      .nonnegative(),
+    note_index: noteIndexSchema,
 
     applies: z.literal(true),
 
     directive_type: z.literal(
-      "minimum_battery_reserve"
+      "solar_reduction"
     ),
 
     structured_adjustment:
-      minimumBatteryReserveAdjustmentSchema,
+      solarReductionAdjustmentSchema,
 
-    explanation: z
-      .string()
-      .min(1)
-      .refine((value) => value.trim().length > 0, {
-        message: "explanation must not be empty",
-      }),
+    explanation: explanationSchema,
   })
   .strict();
 
+const minimumBatteryReserveInterpretationSchema =
+  z
+    .object({
+      note_index: noteIndexSchema,
+
+      applies: z.literal(true),
+
+      directive_type: z.literal(
+        "minimum_battery_reserve"
+      ),
+
+      structured_adjustment:
+        minimumBatteryReserveAdjustmentSchema,
+
+      explanation: explanationSchema,
+    })
+    .strict();
+
 const noChargeWindowInterpretationSchema = z
   .object({
-    note_index: z
-      .number()
-      .int()
-      .nonnegative(),
+    note_index: noteIndexSchema,
 
     applies: z.literal(true),
 
-    directive_type: z.literal("no_charge_window"),
+    directive_type: z.literal(
+      "no_charge_window"
+    ),
 
     structured_adjustment:
       noChargeWindowAdjustmentSchema,
 
-    explanation: z
-      .string()
-      .min(1)
-      .refine((value) => value.trim().length > 0, {
-        message: "explanation must not be empty",
-      }),
+    explanation: explanationSchema,
   })
   .strict();
 
 const noDischargeWindowInterpretationSchema = z
   .object({
-    note_index: z
-      .number()
-      .int()
-      .nonnegative(),
+    note_index: noteIndexSchema,
 
     applies: z.literal(true),
 
@@ -183,46 +170,41 @@ const noDischargeWindowInterpretationSchema = z
     structured_adjustment:
       noDischargeWindowAdjustmentSchema,
 
-    explanation: z
-      .string()
-      .min(1)
-      .refine((value) => value.trim().length > 0, {
-        message: "explanation must not be empty",
-      }),
+    explanation: explanationSchema,
   })
   .strict();
 
 const maxGridWindowInterpretationSchema = z
   .object({
-    note_index: z
-      .number()
-      .int()
-      .nonnegative(),
+    note_index: noteIndexSchema,
 
     applies: z.literal(true),
 
-    directive_type: z.literal("max_grid_window"),
+    directive_type: z.literal(
+      "max_grid_window"
+    ),
 
     structured_adjustment:
       maxGridWindowAdjustmentSchema,
 
-    explanation: z
-      .string()
-      .min(1)
-      .refine((value) => value.trim().length > 0, {
-        message: "explanation must not be empty",
-      }),
+    explanation: explanationSchema,
   })
   .strict();
 
-export const directiveInterpretationSchema = z.union([
-  solarReductionInterpretationSchema,
-  minimumBatteryReserveInterpretationSchema,
-  noChargeWindowInterpretationSchema,
-  noDischargeWindowInterpretationSchema,
-  maxGridWindowInterpretationSchema,
-  noOpInterpretationSchema,
-]);
+export const directiveInterpretationSchema =
+  z.union([
+    solarReductionInterpretationSchema,
+
+    minimumBatteryReserveInterpretationSchema,
+
+    noChargeWindowInterpretationSchema,
+
+    noDischargeWindowInterpretationSchema,
+
+    maxGridWindowInterpretationSchema,
+
+    noOpInterpretationSchema,
+  ]);
 
 export const directiveInterpretationsSchema = z
   .array(directiveInterpretationSchema)
@@ -233,17 +215,30 @@ export const directiveInterpretationsSchema = z
       (directive) => directive.note_index
     );
 
-    const uniqueIndexes = new Set(noteIndexes);
+    const uniqueIndexes = new Set(
+      noteIndexes
+    );
 
-    if (uniqueIndexes.size !== noteIndexes.length) {
+    if (
+      uniqueIndexes.size !==
+      noteIndexes.length
+    ) {
       ctx.addIssue({
         code: "custom",
-        message: "note_index values must be unique",
+        message:
+          "note_index values must be unique",
       });
     }
 
-    for (let index = 1; index < noteIndexes.length; index += 1) {
-      if (noteIndexes[index] <= noteIndexes[index - 1]) {
+    for (
+      let index = 1;
+      index < noteIndexes.length;
+      index += 1
+    ) {
+      if (
+        noteIndexes[index] <=
+        noteIndexes[index - 1]
+      ) {
         ctx.addIssue({
           code: "custom",
           message:
@@ -255,10 +250,12 @@ export const directiveInterpretationsSchema = z
     }
   });
 
-export type DirectiveInterpretation = z.infer<
-  typeof directiveInterpretationSchema
->;
+export type DirectiveInterpretation =
+  z.infer<
+    typeof directiveInterpretationSchema
+  >;
 
-export type DirectiveInterpretations = z.infer<
-  typeof directiveInterpretationsSchema
->;
+export type DirectiveInterpretations =
+  z.infer<
+    typeof directiveInterpretationsSchema
+  >;
