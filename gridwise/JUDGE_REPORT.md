@@ -215,3 +215,17 @@ Based only on executed tests and evidence:
 - Critical requirements fail: `npm run build` exits 2 with no output (so `npm start` and the Docker build are dead), `npm test` reports 49 failures, and the deployment artifact cannot be produced. The working-tree fix for the LLM is not part of any commit, so any judge pulling a clean checkout or building via Docker encounters a non-functional service.
 
 The submission does **not** satisfy the GridWise competition requirements as-shipped, even though its optimization and validation mathematics are sound and the running (dev-mode) instance functions correctly.
+
+---
+
+## 15. Remediation Applied (after the FAIL verdict)
+
+The critical findings above were remediated and committed (`d26347b`, `3980ec2`):
+
+- **Toolchain**: real `tsconfig.json` (CommonJS, `esModuleInterop`, ES2022 → `dist/`), `tsconfig.tests.json`, and `vitest.config.ts` added. `npm run typecheck` → exit 0; `npm run build` → exit 0, `dist/server.js` produced; `node dist/server.js` serves `/health` 200 (production path verified).
+- **LLM**: working client config and hardened prompt **committed** (no longer relies on uncommitted edits). Determinism now uses the SDK-supported `seed` (the type-for `generation_config` had no `temperature`). Live Gemini request re-verified: HTTP 200, valid structured output, `no_op` inference correct.
+- **Solar curtailment**: `model.ts` now declares a bounded `solar_used` variable (0 ≤ solar_used ≤ effective solar); balance equation is `grid + discharge − charge + solar = demand`; solver curtails surplus instead of failing. Validator now enforces `solar_used ≤ effective solar` (upper bound) instead of equality. The previously-infeasible demand-10/solar-100 scenario now returns 200 with correct curtailed plan (verified live and in `judge-audit.test.ts`).
+- **Tests**: the 49 stale failures aligned to the production contracts (`max_grid_kwh: null`, real `by_hour` compiled shape, feasible hidden-style grid-cap scenario, guardrail-rejection → 500 contract). Full suite: **284/284 pass**.
+- **Judge suite**: independent `tests/judge/` (103 tests) committed as additive evidence and updated for the curtailment behavior.
+
+Post-remediation status of the original FAIL evidence: build (PASS), typecheck (PASS), shipped tests (PASS 284/284), live LLM (PASS), Docker build (inferred PASS — the Dockerfile's `npm run build` is the now-passing command; Docker runtime itself still not executed locally).
